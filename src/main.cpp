@@ -519,6 +519,27 @@ void analogpinReadHandler(BLECharacteristic *chr) {
 ;
 #endif
 
+// Tone handler
+void playToneTask(void *args) {
+  while (1) {
+    if (isPlayTone) {
+      uint16_t freq = 1000000 / duration;
+
+      log_i("Volume:%d\n", volume);
+      log_i("Duration:%d\n", duration);
+      log_i("Freq:%d\n", freq);
+      // Play tone with frequency freq and duration.
+      for (long i = 0; i < duration * 1000L; i += freq * 2) {
+        digitalWrite(SPEAKER_PIN, HIGH);
+        delayMicroseconds(freq);
+        digitalWrite(SPEAKER_PIN, LOW);
+        delayMicroseconds(freq);
+      }
+      isPlayTone = false;
+    }
+    delay(10);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -798,27 +819,6 @@ void sendBtn(uint8_t btnID, uint8_t btn, uint8_t btn_status, uint8_t prev) {
               pCharacteristic[4]->setValue(action, 20);
               pCharacteristic[4]->notify();
 #endif
-  }
-}
-
-void playToneTask(void *args) {
-  while (1) {
-    if (isPlayTone) {
-      uint16_t freq = 1000000 / duration;
-
-      log_i("Volume:%d\n", volume);
-      log_i("Duration:%d\n", duration);
-      log_i("Freq:%d\n", freq);
-      // Play tone with frequency freq and duration.
-      for (long i = 0; i < duration * 1000L; i += freq * 2) {
-        digitalWrite(SPEAKER_PIN, HIGH);
-        delayMicroseconds(freq);
-        digitalWrite(SPEAKER_PIN, LOW);
-        delayMicroseconds(freq);
-      }
-      isPlayTone = false;
-    }
-    delay(10);
   }
 }
 
