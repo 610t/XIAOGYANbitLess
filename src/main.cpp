@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Xiaogyan.hpp>  // https://github.com/algyan/xiaogyan_arduino
 
 #if defined(ARDUINO_NRF52840_FEATHER_SENSE) || defined(ARDUINO_Seeed_XIAO_nRF52840_Sense) || defined(ARDUINO_SEEED_XIAO_NRF52840_SENSE)
 #define NRF52840_SENSE
@@ -544,6 +545,8 @@ void playToneTask(void *args) {
 void setup() {
   Serial.begin(115200);
 
+  Xiaogyan.begin();
+
   // button
   pinMode(BTN_PIN, INPUT_PULLUP);
 
@@ -833,8 +836,10 @@ void loop() {
             btn_statusA = 0, btn_statusB = 0, btn_statusC = 0;
 
     // Get all button status
-    btnA = (digitalRead(BTN_PIN) == 0);
+    btnA = Xiaogyan.buttonA.read() == LOW;
     btn_statusA = btnA;
+    btnB = Xiaogyan.buttonB.read() == LOW;
+    btn_statusB = btnB;
 
 #define BUTTON_DELAY 50
 
