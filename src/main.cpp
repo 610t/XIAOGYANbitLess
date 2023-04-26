@@ -146,6 +146,9 @@ void drawPixel(int x, int y, int c) {
   if (c == WHITE) {
     u8g2.drawBox(x * ps, y * ps + TEXT_SPACE, ps, ps);
     u8g2.sendBuffer();
+    Xiaogyan.ledMatrix.drawPixel(x, y, 1);
+  } else {
+    Xiaogyan.ledMatrix.drawPixel(x, y, 0);
   }
 };
 
@@ -158,12 +161,16 @@ void displayShowPixel() {
       log_i("%1d", pixel[y][x] & 0b1);
       if (pixel[y][x] & 0b1) {
         drawPixel(x, y, WHITE);
+      } else {
+        drawPixel(x, y, BLACK);
       }
     }
   }
 };
 
 void fillScreen(int c) {
+  Xiaogyan.ledMatrix.fillScreen(0);
+
   if (c == BLACK) {
     u8g2.clearDisplay();
   } else {
@@ -550,6 +557,8 @@ void setup() {
   Serial.begin(115200);
 
   Xiaogyan.begin();
+  Xiaogyan.ledMatrix.setBrightness(2);
+  Xiaogyan.ledMatrix.fillScreen(0);
 
   // button
   pinMode(BTN_PIN, INPUT_PULLUP);
