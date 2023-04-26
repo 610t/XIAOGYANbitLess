@@ -1,4 +1,8 @@
 #include <Arduino.h>
+
+#if !defined(SPEAKER)
+#define SPEAKER 1
+#endif
 #include <Xiaogyan.hpp>  // https://github.com/algyan/xiaogyan_arduino
 
 #if defined(ARDUINO_NRF52840_FEATHER_SENSE) || defined(ARDUINO_Seeed_XIAO_nRF52840_Sense) || defined(ARDUINO_SEEED_XIAO_NRF52840_SENSE)
@@ -830,6 +834,9 @@ uint8_t prevA = 0, prevB = 0, prevC = 0;
 uint32_t old_label_time = 0;
 
 void loop() {
+  // Xiaogyan
+  Xiaogyan.doWork();
+
   if (deviceConnected) {
     // Send notify data for button A, B and C(LOGO).
     uint8_t btnA = 0, btnB = 0, btnC = 0,
