@@ -3,6 +3,7 @@
 #if !defined(SPEAKER)
 #define SPEAKER 1
 #endif
+
 #include <Xiaogyan.hpp>  // https://github.com/algyan/xiaogyan_arduino
 
 #if defined(ARDUINO_NRF52840_FEATHER_SENSE) || defined(ARDUINO_Seeed_XIAO_nRF52840_Sense) || defined(ARDUINO_SEEED_XIAO_NRF52840_SENSE)
@@ -23,8 +24,23 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 
 #if defined(ARDUINO_XIAO_ESP32C3)
-#include "I2C_MPU6886.h"
+
+#define IMU_NONE 0
+#define IMU_MPU6886 1
+#define IMU_ADXL345 2
+
+#if !defined(IMU_DEVICE)
+#define IMU_DEVICE IMU_MPU6886  // Default IMU is MPU6886.
+#endif
+#if IMU_DEVICE == IMU_MPU6886
+#include "I2C_MPU6886.h"  // https://github.com/tanakamasayuki/I2C_MPU6886
 I2C_MPU6886 imu(I2C_MPU6886_DEFAULT_ADDRESS, Wire);
+#elif IMU_DEVICE == IMU_ADXL345
+static constexpr uint8_t I2C_ADDRESS = 0x53;
+
+static constexpr uint8_t REG_POWER_CTL = 0x2d;
+static constexpr uint8_t REG_DATAX0 = 0x32;
+#endif
 #endif
 
 #if defined(NRF52840_SENSE)
@@ -433,6 +449,7 @@ float pitch, roll, yaw;
 
 void updateIMU() {
 #if defined(NRF52840_SENSE)
+  // for Accelerometer nRF52840 Sense internal IMU
   ax = imu.readFloatAccelX();
   ay = imu.readFloatAccelY();
   az = imu.readFloatAccelZ();
@@ -440,9 +457,34 @@ void updateIMU() {
   roll = atan(ay / az) * RAD_TO_DEG;
   temp = imu.readTempC();
 #else
+#if IMU_DEVICE == IMU_MPU6886
+      // for Accelerometer MPU6886
       imu.getAccel(&ax, &ay, &az);
       imu.getGyro(&gx, &gy, &gz);
       imu.getTemp(&temp);
+#elif IMU_DEVICE == IMU_ADXL345
+      // for Accelerometer ADXL345
+      Wire.beginTransmission(I2C_ADDRESS);
+      Wire.write(REG_DATAX0);
+      if (Wire.endTransmission() == 0) {
+        uint8_t readData[6];
+        if (Wire.requestFrom(I2C_ADDRESS, sizeof(readData)) != sizeof(readData)) abort();
+        for (size_t i = 0; i < sizeof(readData); ++i) readData[i] = Wire.read();
+        int16_t val;
+
+        ((uint8_t *)&val)[0] = readData[0];
+        ((uint8_t *)&val)[1] = readData[1];
+        ax = val * 2.0f / 512.0f;
+
+        ((uint8_t *)&val)[0] = readData[2];
+        ((uint8_t *)&val)[1] = readData[3];
+        ay = val * 2.0f / 512.0f;
+
+        ((uint8_t *)&val)[0] = readData[4];
+        ((uint8_t *)&val)[1] = readData[5];
+        az = val * 2.0f / 512.0f;
+      }
+#endif
 #endif
 
   iax = (int16_t)(ax * ACC_MULT);
@@ -577,7 +619,15 @@ void setup() {
 
 #if defined(ARDUINO_XIAO_ESP32C3) || defined(NRF52840_SENSE)
   // Setup IMU
+#if IMU_DEVICE == IMU_MP6886
   imu.begin();
+  // IMU
+#elif IMU_DEVICE == IMU_ADXL345
+  Wire.beginTransmission(I2C_ADDRESS);
+  Wire.write(REG_POWER_CTL);
+  Wire.write(0x08);
+  if (Wire.endTransmission() != 0) abort();
+#endif
 #endif
 
   // for buzzer
