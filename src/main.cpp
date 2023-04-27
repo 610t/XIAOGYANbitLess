@@ -61,9 +61,6 @@ uint8_t volume;
 #if defined(ARDUINO_XIAO_ESP32C3)
 #include <BLEDevice.h>
 #include <BLEUtils.h>
-#endif
-
-#if defined(ARDUINO_XIAO_ESP32C3)
 #include <BLEServer.h>
 #include <BLE2902.h>
 #endif
