@@ -15,7 +15,8 @@
 #else
 #define BTN_PIN D1
 #endif
-#define SPEAKER_PIN A3
+#define SPEAKER_PIN A0
+#define ANALOG_INPUT_PIN A3
 
 #include <U8x8lib.h>
 U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X8_PIN_NONE);  // OLEDs without Reset of the Display
@@ -552,7 +553,7 @@ void analogpinReadHandler(BLECharacteristic *chr) {
 #endif
   log_i(">>> onAnalogPinReadHandler\n");
 
-  int r = analogRead(A3);
+  int r = analogRead(ANALOG_INPUT_PIN);
 
   log_i("Analog Pin0 Read:%d\n", r);
 
