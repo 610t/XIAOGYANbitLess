@@ -31,7 +31,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 #define IMU_ADXL345 2
 
 #if !defined(IMU_DEVICE)
-#define IMU_DEVICE IMU_MPU6886  // Default IMU is MPU6886.
+#define IMU_DEVICE IMU_ADXL345  // Default IMU is ADXL345.
 #endif
 #if IMU_DEVICE == IMU_MPU6886
 #include "I2C_MPU6886.h"  // https://github.com/tanakamasayuki/I2C_MPU6886
