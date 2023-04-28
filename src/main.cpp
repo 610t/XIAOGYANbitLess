@@ -552,7 +552,7 @@ void analogpinReadHandler(BLECharacteristic *chr) {
 #endif
   log_i(">>> onAnalogPinReadHandler\n");
 
-  int r = 280;
+  int r = analogRead(A3);
 
   log_i("Analog Pin0 Read:%d\n", r);
 
