@@ -17,6 +17,8 @@
 #endif
 #define SPEAKER_PIN A0
 #define ANALOG_INPUT_PIN A3
+#define LED_ENCODER D6
+#define LED_OPTIONAL D6
 
 #include <U8x8lib.h>
 U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X8_PIN_NONE);  // OLEDs without Reset of the Display
@@ -401,6 +403,17 @@ void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, 
       log_i("Data is Text.\n");
     } else {
       log_i("Data is Unknown:%02x.\n", cmd_data);
+    }
+
+    // Sample implementation label & data event handling for M5StickC and Plus.
+    // If the label "led" is data "on", the LED is turned on;
+    //  otherwise, the LED is turned off.
+    if (strcmp(label, "led") == 0) {
+      if (strcmp(data, "on") == 0) {
+        digitalWrite(LED_ENCODER, LOW);
+      } else {
+        digitalWrite(LED_ENCODER, HIGH);
+      }
     }
   }
 }
