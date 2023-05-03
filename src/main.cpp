@@ -5,6 +5,7 @@
 #endif
 
 #include <Xiaogyan.hpp>  // https://github.com/algyan/xiaogyan_arduino
+static int EncoderValue_ = 127;
 
 #if defined(ARDUINO_NRF52840_FEATHER_SENSE) || defined(ARDUINO_Seeed_XIAO_nRF52840_Sense) || defined(ARDUINO_SEEED_XIAO_NRF52840_SENSE)
 #define NRF52840_SENSE
@@ -436,6 +437,7 @@ void stateReadHandler(BLECharacteristic *chr){
   log_i(">> onStateReadReadHandler\n");
 state[6] = (random(256) & 0xff);        // Random sensor value for soundlevel
 state[5] = ((int)(temp + 128) & 0xff);  // temperature(+128)
+state[4] = (EncoderValue_ & 0xff);      // lightlevel for encoder
 
 log_i("STATE read %s", (char *)state);
 
@@ -643,6 +645,13 @@ void setup() {
 
   // for buzzer
   pinMode(SPEAKER_PIN, OUTPUT);
+
+  // for encoder
+  Xiaogyan.encoder.setRotatedHandler([](bool cw) {
+    const int value = EncoderValue_ + (cw ? -1 : 1);
+    EncoderValue_ = constrain(value, 0, 255);
+    Serial.println(EncoderValue_);
+  });
 
   // Create MAC address base fixed ID
   uint8_t mac0[6] = { 0 };
