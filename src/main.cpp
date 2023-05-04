@@ -27,6 +27,9 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X
 #include <U8g2lib.h>
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 
+// font data
+#include "font.hpp"
+
 #if defined(ARDUINO_XIAO_ESP32C3)
 
 #define IMU_NONE 0
@@ -278,6 +281,35 @@ void cmdReadHandler(BLECharacteristic *chr) {
   log_i(">>> onCmdReadHandler\n");
 }
 
+void dispString(const char mes[]) {
+
+
+  for (int i = 0; i < strlen(mes); i++) {
+    char c = mes[i];
+
+    if (c < 32 || c > 127) {
+      Serial.println("dispString Error...");
+      continue;
+    }
+
+    Serial.printf("data:%x\n", font_5x5[c - 32]);
+
+    for (int y = 0; y < 5; y++) {
+      int f_data = font_5x5[(c - 32) * 5 + y];
+      int bit = 0b10000;
+      for (int x = 0; x < 5; x++) {
+        if (f_data & bit) {
+          drawPixel(x, y, WHITE);
+        } else {
+          drawPixel(x, y, BLACK);
+        }
+        bit = bit >> 1;
+      }
+    }
+    delay(500);
+  }
+}
+
 #if defined(NRF52840_SENSE)
 void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, uint16_t len) {
 #else
@@ -324,7 +356,10 @@ void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, 
       u8x8.setCursor(0, 0);
       char str[128];
       snprintf(str, sizeof(str), "%s", &(cmd_str[1]));
+      // for OLED
       u8x8.print(str);
+      // for 5x5 LED Matrix
+      dispString(str);
     } else if (cmd_display == 0x02) {
       // PIXELS_0 0x02
       log_i(">> pixel0\n");
