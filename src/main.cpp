@@ -28,7 +28,14 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 
 // font data
-#include "font.hpp"
+#define FONT_SIZE 8
+#if FONT_SIZE == 8
+#include "font_8x8.hpp"
+#define FONT_DATA font_8x8
+#else  // May be 5x5
+#include "font_5x5.hpp"
+#define FONT_DATA font_5x5
+#endif
 
 #if defined(ARDUINO_XIAO_ESP32C3)
 
@@ -282,8 +289,6 @@ void cmdReadHandler(BLECharacteristic *chr) {
 }
 
 void dispString(const char mes[]) {
-
-
   for (int i = 0; i < strlen(mes); i++) {
     char c = mes[i];
 
@@ -292,12 +297,12 @@ void dispString(const char mes[]) {
       continue;
     }
 
-    Serial.printf("data:%x\n", font_5x5[c - 32]);
+    Serial.printf("data:%x\n", FONT_DATA[c - 32]);
 
-    for (int y = 0; y < 5; y++) {
-      int f_data = font_5x5[(c - 32) * 5 + y];
-      int bit = 0b10000;
-      for (int x = 0; x < 5; x++) {
+    for (int y = 0; y < FONT_SIZE; y++) {
+      int f_data = FONT_DATA[(c - 32) * FONT_SIZE + y];
+      int bit = (0b1 << FONT_SIZE - 1);
+      for (int x = 0; x < FONT_SIZE; x++) {
         if (f_data & bit) {
           drawPixel(x, y, WHITE);
         } else {
@@ -306,7 +311,6 @@ void dispString(const char mes[]) {
         bit = bit >> 1;
       }
     }
-    delay(500);
   }
 }
 
