@@ -160,8 +160,12 @@ bool deviceConnected = false;
 #define TEXT_SPACE 10
 #define DISPLAY_WIDTH 128
 #define DISPLAY_HEIGHT 64
-#define WHITE 1
 #define BLACK 0
+#define RED 1    // for XIAOGYAN 8x8 Matrix LED
+#define WHITE 1  // for XIAO Expansion board
+#define GREEN 2
+#define ORANGE 3
+
 uint16_t pixel[5][5] = { 0 };
 
 void drawPixel(int x, int y, int c) {
@@ -170,13 +174,11 @@ void drawPixel(int x, int y, int c) {
 
   int ps = (w < (h - TEXT_SPACE)) ? w / 5 : (h - TEXT_SPACE) / 5;  // Pixel size
 
-  if (c == WHITE) {
+  if (c != BLACK) {
     u8g2.drawBox(x * ps, y * ps + TEXT_SPACE, ps, ps);
     u8g2.sendBuffer();
-    Xiaogyan.ledMatrix.drawPixel(x, y, 1);
-  } else {
-    Xiaogyan.ledMatrix.drawPixel(x, y, 0);
   }
+  Xiaogyan.ledMatrix.drawPixel(x, y, c);
 };
 
 void displayShowPixel() {
@@ -187,7 +189,7 @@ void displayShowPixel() {
     for (int x = 0; x < 5; x++) {
       log_i("%1d", pixel[y][x] & 0b1);
       if (pixel[y][x] & 0b1) {
-        drawPixel(x, y, WHITE);
+        drawPixel(x, y, RED);
       } else {
         drawPixel(x, y, BLACK);
       }
@@ -304,7 +306,7 @@ void dispString(const char mes[]) {
       int bit = (0b1 << FONT_SIZE - 1);
       for (int x = 0; x < FONT_SIZE; x++) {
         if (f_data & bit) {
-          drawPixel(x, y, WHITE);
+          drawPixel(x, y, GREEN);
         } else {
           drawPixel(x, y, BLACK);
         }
