@@ -366,6 +366,7 @@ void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, 
       u8x8.print(str);
       // for 5x5 LED Matrix
       dispString(str);
+      dispString(" ");
     } else if (cmd_display == 0x02) {
       // PIXELS_0 0x02
       log_i(">> pixel0\n");
