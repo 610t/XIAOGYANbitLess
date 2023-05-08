@@ -10,10 +10,14 @@ Scratchには、Microbit More拡張機能が利用可能な、([Stretch3](https:
 - [Seeed Studio XIAO 拡張ボード](https://wiki.seeedstudio.com/Seeeduino-XIAO-Expansion-Board)
 
 ### 現在利用できるデバイス
+現在、以下のようなデバイスに対応しています。
+
 #### XIAOGYAN8周年記念ボード
-- 5x5 LEDとしての表示
-- I2C加速度計 (MPU6886 or ADXL345)
+- 5x5 LEDとしてのパターン表示
+- 8x8 LEDへの文字列表示
+- I2C加速度計 (ADXL345 or MPU6886)
 - ボタンスイッチ
+- スピーカーからのトーン音出力
 - P0としてのアナログ入力(XIAOGYANのA3ポート)
 
 #### Seeed Studio XIAO 拡張ボード
