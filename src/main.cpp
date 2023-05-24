@@ -279,17 +279,6 @@ void dummyWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data
   };
 #endif
 
-// for cmd
-#if defined(NRF52840_SENSE)
-void cmdReadHandler(BLECharacteristic *chr) {
-#else
-  class CmdCallbacks : public BLECharacteristicCallbacks {
-    void onRead(BLECharacteristic *pCharacteristic) {
-      pCharacteristic->setValue(cmd, 20);
-#endif
-  log_i(">>> onCmdReadHandler\n");
-}
-
 void dispString(const char mes[]) {
   for (int i = 0; i < strlen(mes); i++) {
     char c = mes[i];
@@ -314,6 +303,17 @@ void dispString(const char mes[]) {
       }
     }
   }
+}
+
+// for cmd
+#if defined(NRF52840_SENSE)
+void cmdReadHandler(BLECharacteristic *chr) {
+#else
+  class CmdCallbacks : public BLECharacteristicCallbacks {
+    void onRead(BLECharacteristic *pCharacteristic) {
+      pCharacteristic->setValue(cmd, 20);
+#endif
+  log_i(">>> onCmdReadHandler\n");
 }
 
 #if defined(NRF52840_SENSE)
