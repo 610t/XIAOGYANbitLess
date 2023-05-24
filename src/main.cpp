@@ -279,7 +279,7 @@ void dummyWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data
   };
 #endif
 
-void dispString(const char mes[]) {
+void dispString(const char mes[], int duration) {
   for (int i = 0; i < strlen(mes); i++) {
     char c = mes[i];
 
@@ -302,6 +302,7 @@ void dispString(const char mes[]) {
         bit = bit >> 1;
       }
     }
+    delay(duration);
   }
 }
 
@@ -365,8 +366,8 @@ void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, 
       // for OLED
       u8x8.print(str);
       // for 5x5 LED Matrix
-      dispString(str);
-      dispString(" ");
+      dispString(str, value[1] * 10);
+      dispString(" ", 0);
     } else if (cmd_display == 0x02) {
       // PIXELS_0 0x02
       log_i(">> pixel0\n");
