@@ -21,10 +21,11 @@ static int EncoderValue_ = 127;
 #define LED_ENCODER D6
 #define LED_OPTIONAL D6
 
-#include <U8x8lib.h>
-U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X8_PIN_NONE);  // OLEDs without Reset of the Display
+#include <U8x8lib.h>  // U8g2: https://github.com/olikraus/u8g2
+// OLEDs without Reset of the Display
+U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* clock=*/7, /* data=*/6, /* reset=*/U8X8_PIN_NONE);
 
-#include <U8g2lib.h>
+#include <U8g2lib.h>  // U8g2: https://github.com/olikraus/u8g2
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 
 // font data
@@ -58,7 +59,7 @@ static constexpr uint8_t REG_DATAX0 = 0x32;
 #endif
 
 #if defined(NRF52840_SENSE)
-#include "LSM6DS3.h"
+#include "LSM6DS3.h" // Seeed Arduino LSM6D3S
 LSM6DS3 imu(I2C_MODE, 0x6A);
 #endif
 
