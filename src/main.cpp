@@ -7,15 +7,7 @@
 #include <Xiaogyan.hpp>  // https://github.com/algyan/xiaogyan_arduino
 static int EncoderValue_ = 127;
 
-#if defined(ARDUINO_NRF52840_FEATHER_SENSE) || defined(ARDUINO_Seeed_XIAO_nRF52840_Sense) || defined(ARDUINO_SEEED_XIAO_NRF52840_SENSE)
-#define NRF52840_SENSE
-#endif
-
-#if defined(NRF52840_SENSE)
-#define BTN_PIN 7
-#else
 #define BTN_PIN D1
-#endif
 #define SPEAKER_PIN A0
 #define ANALOG_INPUT_PIN A3
 #define LED_ENCODER D6
@@ -38,8 +30,6 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE);
 #define FONT_DATA font_5x5
 #endif
 
-#if defined(ARDUINO_XIAO_ESP32C3)
-
 #define IMU_NONE 0
 #define IMU_MPU6886 1
 #define IMU_ADXL345 2
@@ -56,38 +46,19 @@ static constexpr uint8_t I2C_ADDRESS = 0x53;
 static constexpr uint8_t REG_POWER_CTL = 0x2d;
 static constexpr uint8_t REG_DATAX0 = 0x32;
 #endif
-#endif
 
-#if defined(NRF52840_SENSE)
-#include "LSM6DS3.h" // Seeed Arduino LSM6D3S
-LSM6DS3 imu(I2C_MODE, 0x6A);
-#endif
-
-#if defined(ARDUINO_XIAO_ESP32C3)
 // For multitask for play tone
 TaskHandle_t playToneTaskHandle = NULL;
-#endif
 bool isPlayTone = false;
 
 // Play tone parameters
 uint32_t duration;
 uint8_t volume;
 
-#if defined(ARDUINO_XIAO_ESP32C3)
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
 #include <BLE2902.h>
-#endif
-
-#if defined(NRF52840_SENSE)
-#include <bluefruit.h>
-
-// Dummy log
-void log_i(const char *format, ...) {
-  Serial.print(format);
-}
-#endif
 
 #define MBIT_MORE_SERVICE "0b50f3e4-607f-4151-9091-7d008d6ffc5c"
 #define MBIT_MORE_CH_COMMAND "0b500100-607f-4151-9091-7d008d6ffc5c"       // R&W(20byte)
@@ -147,13 +118,9 @@ byte message[19] = { 0 };
 // ANALOG PIN 2 byte
 uint8_t analog[] = { 0x00, 0x00 };
 
-#if defined(NRF52840_SENSE)
-BLEService pService = BLEService(MBIT_MORE_SERVICE);
-BLECharacteristic pCharacteristic[9];
-#else
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic[9] = { 0 };
-#endif
+
 bool deviceConnected = false;
 
 // for pixel pattern
@@ -183,9 +150,7 @@ void drawPixel(int x, int y, int c) {
 };
 
 void displayShowPixel() {
-#if defined(ARDUINO_XIAO_ESP32C3)
   u8g2.clearDisplay();
-#endif
   for (int y = 0; y < 5; y++) {
     for (int x = 0; x < 5; x++) {
       log_i("%1d", pixel[y][x] & 0b1);
@@ -209,19 +174,8 @@ void fillScreen(int c) {
   }
 };
 
-#if defined(NRF52840_SENSE)
-void onConnect(uint16_t conn_handle) {
-  BLEConnection *connection = Bluefruit.Connection(conn_handle);
-
-  char central_name[32] = { 0 };
-  connection->getPeerName(central_name, sizeof(central_name));
-
-  log_i("Connected to ");
-  log_i(central_name);
-#else
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) {
-#endif
   log_i("connect\n");
   deviceConnected = true;
 
@@ -229,47 +183,16 @@ class MyServerCallbacks : public BLEServerCallbacks {
   u8g2.sendBuffer();
   fillScreen(BLACK);
 }
-#if !defined(NRF52840_SENSE)
 }
 ;
-#endif
 
-#if defined(NRF52840_SENSE)
-void onDisconnect(uint16_t conn_handle, uint8_t reason) {
-  char str[10];
-  itoa(reason, str, 16);
-
-  log_i("Disconnected, reason = 0x");
-  log_i(str);
-  log_i("Advertising!");
-  deviceConnected = false;
-#if defined(ARDUINO_XIAO_ESP32C3)
-  ESP.restart();
-#else
-  setup();
-#endif
-}
-#else
   void onDisconnect(BLEServer *pServer) {
     log_i("disconnect\n");
     deviceConnected = false;
-#if defined(ARDUINO_XIAO_ESP32C3)
     ESP.restart();
-#else
-    setup();
-#endif
   }
-#endif
 
 // dummy callback
-#if defined(NRF52840_SENSE)
-void dummyReadHandler(BLECharacteristic *chr) {
-  log_i("DUMMY Read\n");
-}
-void dummyWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, uint16_t len) {
-  log_i("DUMMY Write\n");
-}
-#else
   class DummyCallbacks : public BLECharacteristicCallbacks {
     void onRead(BLECharacteristic *pCharacteristic) {
       log_i("DUMMY Read\n");
@@ -278,7 +201,6 @@ void dummyWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data
       log_i("DUMMY Write\n");
     }
   };
-#endif
 
 void dispString(const char mes[], int duration) {
   for (int i = 0; i < strlen(mes); i++) {
@@ -308,21 +230,13 @@ void dispString(const char mes[], int duration) {
 }
 
 // for cmd
-#if defined(NRF52840_SENSE)
-void cmdReadHandler(BLECharacteristic *chr) {
-#else
   class CmdCallbacks : public BLECharacteristicCallbacks {
     void onRead(BLECharacteristic *pCharacteristic) {
       pCharacteristic->setValue(cmd, 20);
-#endif
   log_i(">>> onCmdReadHandler\n");
 }
 
-#if defined(NRF52840_SENSE)
-void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, uint16_t len) {
-#else
     void onWrite(BLECharacteristic *pCharacteristic) {
-#endif
   log_i(">>> onCmdWriteHandler\n");
   log_i("CMD write\n");
   ////// MUST implement!!
@@ -336,11 +250,8 @@ void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, 
   // SET_PULL   0x04
   // SET_EVENT  0x05
 
-#if defined(NRF52840_SENSE)
-  String value = String((char *)data);
-#else
       std::string value = pCharacteristic->getValue();
-#endif
+
   log_i("CMD len:%d\n", value.length());
   log_i("%s\n", value.c_str());
 
@@ -462,21 +373,15 @@ void cmdWriteCallback(uint16_t conn_hdl, BLECharacteristic *chr, uint8_t *data, 
     }
   }
 }
-#if !defined(NRF52840_SENSE)
 }
 ;
-#endif
 
 // for temperature
 float temp = 0;
 
 // for state
-#if defined(NRF52840_SENSE)
-void stateReadHandler(BLECharacteristic *chr){
-#else
     class StateCallbacks : public BLECharacteristicCallbacks {
       void onRead(BLECharacteristic *pCharacteristic) {
-#endif
 
   log_i(">> onStateReadReadHandler\n");
 state[6] = (random(256) & 0xff);        // Random sensor value for soundlevel
@@ -485,14 +390,9 @@ state[4] = (EncoderValue_ & 0xff);      // lightlevel for encoder
 
 log_i("STATE read %s", (char *)state);
 
-#if defined(NRF52840_SENSE)
-chr->write((byte *)state, 7);
-}
-#else
         pCharacteristic->setValue(state, 7);
       }
     };
-#endif
 
 // for accelerometer related values
 #define ACC_MULT 512
@@ -505,15 +405,6 @@ float gx, gy, gz;
 float pitch, roll, yaw;
 
 void updateIMU() {
-#if defined(NRF52840_SENSE)
-  // for Accelerometer nRF52840 Sense internal IMU
-  ax = imu.readFloatAccelX();
-  ay = imu.readFloatAccelY();
-  az = imu.readFloatAccelZ();
-  pitch = atan(-ax / sqrtf(ay * ay + az * az)) * RAD_TO_DEG;
-  roll = atan(ay / az) * RAD_TO_DEG;
-  temp = imu.readTempC();
-#else
 #if IMU_DEVICE == IMU_MPU6886
       // for Accelerometer MPU6886
       imu.getAccel(&ax, &ay, &az);
@@ -542,19 +433,14 @@ void updateIMU() {
         az = val * 2.0f / 512.0f;
       }
 #endif
-#endif
 
   iax = (int16_t)(ax * ACC_MULT);
   iay = (int16_t)(ay * ACC_MULT);
   iaz = (int16_t)(az * ACC_MULT);
 }
 
-#if defined(NRF52840_SENSE)
-void motionReadHandler(BLECharacteristic *chr) {
-#else
     class MotionCallbacks : public BLECharacteristicCallbacks {
       void onRead(BLECharacteristic *pCharacteristic) {
-#endif
   log_i(">>> onMotionReadHandler\n");
 
   updateIMU();
@@ -569,11 +455,7 @@ void motionReadHandler(BLECharacteristic *chr) {
   motion[7] = ((iay >> 8) & 0xff);
   motion[8] = (-iaz & 0xff);
   motion[9] = ((-iaz >> 8) & 0xff);
-#if defined(NRF52840_SENSE)
-  chr->write(motion, 20);
-#else
         pCharacteristic->setValue(motion, 20);
-#endif
 
   // debug print
   char msg[256] = { 0 };
@@ -582,34 +464,21 @@ void motionReadHandler(BLECharacteristic *chr) {
   }
   log_i("MOTION read: %s\n", msg);
 }
-#if !defined(NRF52840_SENSE)
 }
 ;
-#endif
 
-#if defined(NRF52840_SENSE)
-// for button
-void actionReadHandler(BLECharacteristic *chr) {
-#else
       // for button
       class ActionCallbacks : public BLECharacteristicCallbacks {
         void onRead(BLECharacteristic *pCharacteristic) {
           pCharacteristic->setValue("Read me!!");  // dummy data
-#endif
   log_i(">>> onActionReadHandler\n");
 }
-#if !defined(NRF52840_SENSE)
 }
 ;
-#endif
 
 // for Analog pin
-#if defined(NRF52840_SENSE)
-void analogpinReadHandler(BLECharacteristic *chr) {
-#else
         class AnalogPinCallbacks : public BLECharacteristicCallbacks {
           void onRead(BLECharacteristic *pCharacteristic) {
-#endif
   log_i(">>> onAnalogPinReadHandler\n");
 
   int r = analogRead(ANALOG_INPUT_PIN);
@@ -619,16 +488,10 @@ void analogpinReadHandler(BLECharacteristic *chr) {
   analog[0] = (r & 0xff);
   analog[1] = ((r >> 8) & 0xff);
 
-#if defined(NRF52840_SENSE)
-  chr->write(analog, 2);
-#else
             pCharacteristic->setValue(analog, 2);
-#endif
 }
-#if !defined(NRF52840_SENSE)
 }
 ;
-#endif
 
 // Tone handler
 void playToneTask(void *args) {
@@ -674,7 +537,6 @@ void setup() {
   u8g2.clearDisplay();
   u8g2.sendBuffer();
 
-#if defined(ARDUINO_XIAO_ESP32C3) || defined(NRF52840_SENSE)
   // Setup IMU
 #if IMU_DEVICE == IMU_MP6886
   imu.begin();
@@ -684,7 +546,6 @@ void setup() {
   Wire.write(REG_POWER_CTL);
   Wire.write(0x08);
   if (Wire.endTransmission() != 0) abort();
-#endif
 #endif
 
   // for buzzer
@@ -700,15 +561,7 @@ void setup() {
   // Create MAC address base fixed ID
   uint8_t mac0[6] = { 0 };
 
-#if defined(ARDUINO_XIAO_ESP32C3)
   esp_efuse_mac_get_default(mac0);
-#else
-            // Create random mac address for avoid conflict ID.
-            randomSeed(analogRead(A0));
-            for (int i = 0; i < sizeof(mac0); i++) {
-              mac0[i] = random(256);
-            }
-#endif
 
   String ID;
   char adv_str[32] = { 0 };
@@ -734,95 +587,6 @@ void setup() {
   Serial.print("BLE start.\n");
   Serial.println(adv_str);
 
-#if defined(NRF52840_SENSE)
-  Bluefruit.begin();
-  Bluefruit.setName(adv_str);
-  Bluefruit.autoConnLed(true);
-  Bluefruit.setTxPower(8);
-
-  char buf[64] = { 0 };
-  uint8_t len = Bluefruit.getName(buf, 64);
-  Serial.print("Get name.\n");
-  Serial.println(buf);
-  Serial.printf("%d\n", len);
-
-  Bluefruit.Periph.setConnectCallback(onConnect);
-  Bluefruit.Periph.setDisconnectCallback(onDisconnect);
-
-  pService.begin();
-
-  //// Characteristics
-  // CMD
-  pCharacteristic[0] = BLECharacteristic(MBIT_MORE_CH_COMMAND,
-                                         BLERead | BLEWrite | BLEWriteWithoutResponse);
-  pCharacteristic[0].setFixedLen(20);
-  pCharacteristic[0].setWriteCallback(cmdWriteCallback);
-  pCharacteristic[0].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[0].begin();
-
-  // STATE
-  pCharacteristic[1] = BLECharacteristic(MBIT_MORE_CH_STATE,
-                                         BLERead);
-  pCharacteristic[1].setFixedLen(7);
-  pCharacteristic[1].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[1].begin();
-
-  // MOTION
-  pCharacteristic[2] = BLECharacteristic(MBIT_MORE_CH_MOTION,
-                                         BLERead);
-  pCharacteristic[2].setFixedLen(18);
-  pCharacteristic[2].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[2].begin();
-
-  // PIN
-  pCharacteristic[3] = BLECharacteristic(MBIT_MORE_CH_PIN_EVENT,
-                                         BLERead | BLENotify);
-  pCharacteristic[3].setFixedLen(1);
-  pCharacteristic[3].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[3].begin();
-
-  // ACTION
-  pCharacteristic[4] = BLECharacteristic(MBIT_MORE_CH_ACTION_EVENT,
-                                         BLERead | BLENotify);
-  pCharacteristic[4].setFixedLen(20);
-  pCharacteristic[4].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[4].begin();
-
-  // PINS
-  pCharacteristic[5] = BLECharacteristic(MBIT_MORE_CH_ANALOG_IN_P0,
-                                         BLERead);
-  pCharacteristic[5].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[5].begin();
-
-  pCharacteristic[6] = BLECharacteristic(MBIT_MORE_CH_ANALOG_IN_P1,
-                                         BLERead);
-  pCharacteristic[6].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[6].begin();
-
-  pCharacteristic[7] = BLECharacteristic(MBIT_MORE_CH_ANALOG_IN_P2,
-                                         BLERead);
-  pCharacteristic[7].setFixedLen(1);
-  pCharacteristic[7].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[7].begin();
-
-  // MESSAGE (only for v2)
-  pCharacteristic[8] = BLECharacteristic(MBIT_MORE_CH_MESSAGE,
-                                         BLERead);
-  pCharacteristic[8].setFixedLen(1);
-  pCharacteristic[8].setPermission(SECMODE_OPEN, SECMODE_OPEN);
-  pCharacteristic[8].begin();
-
-  //// Advertise
-  Bluefruit.Advertising.addService(pService);
-  Bluefruit.Advertising.clearData();
-  Serial.printf("%d\n", Bluefruit.Advertising.addName());
-  Bluefruit.Advertising.restartOnDisconnect(true);
-  Bluefruit.Advertising.start(0);
-
-  Serial.printf("count:%d\n", Bluefruit.Advertising.count());
-
-  Bluefruit.printInfo();
-#else
             BLEDevice::init(adv_str);
             BLEServer *pServer = BLEDevice::createServer();
             pServer->setCallbacks(new MyServerCallbacks());
@@ -893,12 +657,9 @@ void setup() {
             pService->start();
             BLEAdvertising *pAdvertising = pServer->getAdvertising();
             pAdvertising->start();
-#endif
 
-#if defined(ARDUINO_XIAO_ESP32C3)
   // Multitask for play tone.
   xTaskCreatePinnedToCore(playToneTask, "playToneTask", 4096, NULL, 1, &playToneTaskHandle, 1);
-#endif
 
   log_i("Setup end\n");
 }
@@ -922,33 +683,21 @@ void sendBtn(uint8_t btnID, uint8_t btn, uint8_t btn_status, uint8_t prev) {
     // Button CLICK
     log_i(" button clicked!\n");
     action[3] = 0x03;
-#if defined(NRF52840_SENSE)
-    pCharacteristic[4].notify(action, 20);
-#else
               pCharacteristic[4]->setValue(action, 20);
               pCharacteristic[4]->notify();
-#endif
   }
   if (btn_status == 0 && prev == 1) {
     // Button Up
     log_i(" button up!\n");
     action[3] = 0x02;
-#if defined(NRF52840_SENSE)
-    pCharacteristic[4].notify(action, 20);
-#else
               pCharacteristic[4]->setValue(action, 20);
               pCharacteristic[4]->notify();
-#endif
   } else if (btn_status == 1 && prev == 0) {
     // Button Down
     log_i(" button down!\n");
     action[3] = 0x01;
-#if defined(NRF52840_SENSE)
-    pCharacteristic[4].notify(action, 20);
-#else
               pCharacteristic[4]->setValue(action, 20);
               pCharacteristic[4]->notify();
-#endif
   }
 }
 
@@ -1008,23 +757,9 @@ void loop() {
       action[5] = (time >> 8) & 0xff;
       action[6] = (time >> 16) & 0xff;
       action[7] = (time >> 24) & 0xff;
-#if defined(NRF52840_SENSE)
-      pCharacteristic[4].notify(action, 20);
-#else
                 pCharacteristic[4]->setValue(action, 20);
                 pCharacteristic[4]->notify();
-#endif
       old_label_time = label_time;
     }
-
-#if defined(NRF52840_SENSE)
-    //// Read event handlers
-    cmdReadHandler(&pCharacteristic[0]);
-    stateReadHandler(&pCharacteristic[1]);
-    motionReadHandler(&pCharacteristic[2]);
-    actionReadHandler(&pCharacteristic[4]);
-    //analogpinReadHandler(&pCharacteristic[5]);
-    //analogpinReadHandler(&pCharacteristic[6]);
-#endif
   }
 }
