@@ -176,31 +176,30 @@ void fillScreen(int c) {
 
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) {
-  log_i("connect\n");
-  deviceConnected = true;
+    log_i("connect\n");
+    deviceConnected = true;
 
-  u8g2.clearDisplay();
-  u8g2.sendBuffer();
-  fillScreen(BLACK);
-}
-}
-;
-
-  void onDisconnect(BLEServer *pServer) {
-    log_i("disconnect\n");
-    deviceConnected = false;
-    ESP.restart();
+    u8g2.clearDisplay();
+    u8g2.sendBuffer();
+    fillScreen(BLACK);
   }
+};
+
+void onDisconnect(BLEServer *pServer) {
+  log_i("disconnect\n");
+  deviceConnected = false;
+  ESP.restart();
+}
 
 // dummy callback
-  class DummyCallbacks : public BLECharacteristicCallbacks {
-    void onRead(BLECharacteristic *pCharacteristic) {
-      log_i("DUMMY Read\n");
-    }
-    void onWrite(BLECharacteristic *pCharacteristic) {
-      log_i("DUMMY Write\n");
-    }
-  };
+class DummyCallbacks : public BLECharacteristicCallbacks {
+  void onRead(BLECharacteristic *pCharacteristic) {
+    log_i("DUMMY Read\n");
+  }
+  void onWrite(BLECharacteristic *pCharacteristic) {
+    log_i("DUMMY Write\n");
+  }
+};
 
 void dispString(const char mes[], int duration) {
   for (int i = 0; i < strlen(mes); i++) {
@@ -230,169 +229,168 @@ void dispString(const char mes[], int duration) {
 }
 
 // for cmd
-  class CmdCallbacks : public BLECharacteristicCallbacks {
-    void onRead(BLECharacteristic *pCharacteristic) {
-      pCharacteristic->setValue(cmd, 20);
-  log_i(">>> onCmdReadHandler\n");
-}
+class CmdCallbacks : public BLECharacteristicCallbacks {
+  void onRead(BLECharacteristic *pCharacteristic) {
+    pCharacteristic->setValue(cmd, 20);
+    log_i(">>> onCmdReadHandler\n");
+  }
 
-    void onWrite(BLECharacteristic *pCharacteristic) {
-  log_i(">>> onCmdWriteHandler\n");
-  log_i("CMD write\n");
-  ////// MUST implement!!
-  //// CMD_CONFIG 0x00
-  // MIC    0x01
-  // TOUCH  0x02
-  //// CMD_PIN  0x01
-  // SET_OUTPUT 0x01
-  // SET_PWM    0x02
-  // SET_SERVO  0x03
-  // SET_PULL   0x04
-  // SET_EVENT  0x05
+  void onWrite(BLECharacteristic *pCharacteristic) {
+    log_i(">>> onCmdWriteHandler\n");
+    log_i("CMD write\n");
+    ////// MUST implement!!
+    //// CMD_CONFIG 0x00
+    // MIC    0x01
+    // TOUCH  0x02
+    //// CMD_PIN  0x01
+    // SET_OUTPUT 0x01
+    // SET_PWM    0x02
+    // SET_SERVO  0x03
+    // SET_PULL   0x04
+    // SET_EVENT  0x05
 
-      std::string value = pCharacteristic->getValue();
+    std::string value = pCharacteristic->getValue();
 
-  log_i("CMD len:%d\n", value.length());
-  log_i("%s\n", value.c_str());
+    log_i("CMD len:%d\n", value.length());
+    log_i("%s\n", value.c_str());
 
-  const char *cmd_str = value.c_str();
-  log_i("%s\n", cmd_str);
-  char cmd = (cmd_str[0] >> 5);
-  if (cmd == 0x02) {
-    //// CMD_DISPLAY  0x02
-    log_i("CMD display\n");
-    char cmd_display = cmd_str[0] & 0b11111;
-    if (cmd_display == 0x00) {
-      // CLEAR    0x00
-      log_i(">> clear\n");
-      fillScreen(BLACK);
-    } else if (cmd_display == 0x01) {
-      // TEXT     0x01
-      log_i(">> text\n");
-      log_i("%s\n", &(cmd_str[1]));
-      u8x8.setCursor(0, 0);
-      u8x8.print("                 ");  // Clear text space
-      u8x8.setCursor(0, 0);
-      char str[128];
-      snprintf(str, sizeof(str), "%s", &(cmd_str[1]));
-      // for OLED
-      u8x8.print(str);
-      // for 5x5 LED Matrix
-      dispString(str, value[1] * 10);
-      dispString(" ", 0);
-    } else if (cmd_display == 0x02) {
-      // PIXELS_0 0x02
-      log_i(">> pixel0\n");
-      for (int y = 0; y < 3; y++) {
-        for (int x = 0; x < 5; x++) {
-          pixel[y][x] = (cmd_str[y * 5 + (x + 1)] & 0xb);
+    const char *cmd_str = value.c_str();
+    log_i("%s\n", cmd_str);
+    char cmd = (cmd_str[0] >> 5);
+    if (cmd == 0x02) {
+      //// CMD_DISPLAY  0x02
+      log_i("CMD display\n");
+      char cmd_display = cmd_str[0] & 0b11111;
+      if (cmd_display == 0x00) {
+        // CLEAR    0x00
+        log_i(">> clear\n");
+        fillScreen(BLACK);
+      } else if (cmd_display == 0x01) {
+        // TEXT     0x01
+        log_i(">> text\n");
+        log_i("%s\n", &(cmd_str[1]));
+        u8x8.setCursor(0, 0);
+        u8x8.print("                 ");  // Clear text space
+        u8x8.setCursor(0, 0);
+        char str[128];
+        snprintf(str, sizeof(str), "%s", &(cmd_str[1]));
+        // for OLED
+        u8x8.print(str);
+        // for 5x5 LED Matrix
+        dispString(str, value[1] * 10);
+        dispString(" ", 0);
+      } else if (cmd_display == 0x02) {
+        // PIXELS_0 0x02
+        log_i(">> pixel0\n");
+        for (int y = 0; y < 3; y++) {
+          for (int x = 0; x < 5; x++) {
+            pixel[y][x] = (cmd_str[y * 5 + (x + 1)] & 0xb);
+          }
         }
-      }
-    } else if (cmd_display == 0x03) {
-      // PIXELS_1 0x03
-      log_i(">> pixel1\n");
-      for (int y = 3; y < 5; y++) {
-        for (int x = 0; x < 5; x++) {
-          pixel[y][x] = (cmd_str[(y - 3) * 5 + (x + 1)] & 0xb);
+      } else if (cmd_display == 0x03) {
+        // PIXELS_1 0x03
+        log_i(">> pixel1\n");
+        for (int y = 3; y < 5; y++) {
+          for (int x = 0; x < 5; x++) {
+            pixel[y][x] = (cmd_str[(y - 3) * 5 + (x + 1)] & 0xb);
+          }
         }
+        displayShowPixel();
       }
-      displayShowPixel();
-    }
-  } else if (cmd == 0x03) {
-    //// CMD_AUDIO  0x03
-    log_i("CMD audio\n");
-    char cmd_audio = cmd_str[0] & 0b11111;
-    if (cmd_audio == 0x00) {
-      // STOP_TONE  0x00
-      log_i(">> Stop tone\n");
-      isPlayTone = false;
-    } else if (cmd_audio == 0x01) {
-      // PLAY_TONE  0x01
-      const uint8_t max_volume = 5;
-      log_i(">> Play tone\n");
-      duration = (cmd_str[4] & 0xff) << 24
-                 | (cmd_str[3] & 0xff) << 16
-                 | (cmd_str[2] & 0xff) << 8
-                 | (cmd_str[1] & 0xff);
-      volume = map(cmd_str[5], 0, 255, 0, max_volume);
-      isPlayTone = true;
-    }
-  } else if (cmd == 0x04) {
-    //// CMD_DATA (only v2) 0x04
-    log_i("CMD DATA\n");
+    } else if (cmd == 0x03) {
+      //// CMD_AUDIO  0x03
+      log_i("CMD audio\n");
+      char cmd_audio = cmd_str[0] & 0b11111;
+      if (cmd_audio == 0x00) {
+        // STOP_TONE  0x00
+        log_i(">> Stop tone\n");
+        isPlayTone = false;
+      } else if (cmd_audio == 0x01) {
+        // PLAY_TONE  0x01
+        const uint8_t max_volume = 5;
+        log_i(">> Play tone\n");
+        duration = (cmd_str[4] & 0xff) << 24
+                   | (cmd_str[3] & 0xff) << 16
+                   | (cmd_str[2] & 0xff) << 8
+                   | (cmd_str[1] & 0xff);
+        volume = map(cmd_str[5], 0, 255, 0, max_volume);
+        isPlayTone = true;
+      }
+    } else if (cmd == 0x04) {
+      //// CMD_DATA (only v2) 0x04
+      log_i("CMD DATA\n");
 
-    // Show input data.
-    log_i(">>> Data input:");
-    for (int i = 0; i <= 20; i++) {
-      log_i("(%d)%02x%c:", i, cmd_str[i], cmd_str[i]);
-    }
-    log_i("\n");
+      // Show input data.
+      log_i(">>> Data input:");
+      for (int i = 0; i <= 20; i++) {
+        log_i("(%d)%02x%c:", i, cmd_str[i], cmd_str[i]);
+      }
+      log_i("\n");
 
-    // Convert from input data to label & data.
-    char label[9] = { 0 };
-    strncpy(label, &cmd_str[1], sizeof(label) - 1);
-    String label_str = String(label);
+      // Convert from input data to label & data.
+      char label[9] = { 0 };
+      strncpy(label, &cmd_str[1], sizeof(label) - 1);
+      String label_str = String(label);
 
-    char data[12] = { 0 };
-    strncpy(data, &cmd_str[9], sizeof(data) - 1);
-    String data_str = String(data);
+      char data[12] = { 0 };
+      strncpy(data, &cmd_str[9], sizeof(data) - 1);
+      String data_str = String(data);
 
-    // Convert from 8bit uint8_t x 4 to 32bit float with little endian.
-    static union {
-      uint32_t i;
-      uint8_t b[sizeof(float)];
-      float f;
-    } conv_data;
-    conv_data.b[0] = cmd_str[9];
-    conv_data.b[1] = cmd_str[10];
-    conv_data.b[2] = cmd_str[11];
-    conv_data.b[3] = cmd_str[12];
-    float data_val = conv_data.f;
+      // Convert from 8bit uint8_t x 4 to 32bit float with little endian.
+      static union {
+        uint32_t i;
+        uint8_t b[sizeof(float)];
+        float f;
+      } conv_data;
+      conv_data.b[0] = cmd_str[9];
+      conv_data.b[1] = cmd_str[10];
+      conv_data.b[2] = cmd_str[11];
+      conv_data.b[3] = cmd_str[12];
+      float data_val = conv_data.f;
 
-    log_i("Label str:%s, Data str:%s, Data value:%f.\n", label_str, data_str, data_val);
+      log_i("Label str:%s, Data str:%s, Data value:%f.\n", label_str, data_str, data_val);
 
-    // Can't get correct command for number=0x13 and text=0x14. Why?
-    char cmd_data = cmd_str[20];
-    if (cmd_data == 0x13) {
-      log_i("Data is Number.\n");
-    } else if (cmd_data == 0x14) {
-      log_i("Data is Text.\n");
-    } else {
-      log_i("Data is Unknown:%02x.\n", cmd_data);
-    }
-
-    // Sample implementation label & data event handling for M5StickC and Plus.
-    // If the label "led" is data "on", the LED is turned on;
-    //  otherwise, the LED is turned off.
-    if (strcmp(label, "led") == 0) {
-      if (strcmp(data, "on") == 0) {
-        digitalWrite(LED_ENCODER, LOW);
+      // Can't get correct command for number=0x13 and text=0x14. Why?
+      char cmd_data = cmd_str[20];
+      if (cmd_data == 0x13) {
+        log_i("Data is Number.\n");
+      } else if (cmd_data == 0x14) {
+        log_i("Data is Text.\n");
       } else {
-        digitalWrite(LED_ENCODER, HIGH);
+        log_i("Data is Unknown:%02x.\n", cmd_data);
+      }
+
+      // Sample implementation label & data event handling for M5StickC and Plus.
+      // If the label "led" is data "on", the LED is turned on;
+      //  otherwise, the LED is turned off.
+      if (strcmp(label, "led") == 0) {
+        if (strcmp(data, "on") == 0) {
+          digitalWrite(LED_ENCODER, LOW);
+        } else {
+          digitalWrite(LED_ENCODER, HIGH);
+        }
       }
     }
   }
-}
-}
-;
+};
 
 // for temperature
 float temp = 0;
 
 // for state
-    class StateCallbacks : public BLECharacteristicCallbacks {
-      void onRead(BLECharacteristic *pCharacteristic) {
+class StateCallbacks : public BLECharacteristicCallbacks {
+  void onRead(BLECharacteristic *pCharacteristic) {
 
-  log_i(">> onStateReadReadHandler\n");
-state[6] = (random(256) & 0xff);        // Random sensor value for soundlevel
-state[5] = ((int)(temp + 128) & 0xff);  // temperature(+128)
-state[4] = (EncoderValue_ & 0xff);      // lightlevel for encoder
+    log_i(">> onStateReadReadHandler\n");
+    state[6] = (random(256) & 0xff);        // Random sensor value for soundlevel
+    state[5] = ((int)(temp + 128) & 0xff);  // temperature(+128)
+    state[4] = (EncoderValue_ & 0xff);      // lightlevel for encoder
 
-log_i("STATE read %s", (char *)state);
+    log_i("STATE read %s", (char *)state);
 
-        pCharacteristic->setValue(state, 7);
-      }
-    };
+    pCharacteristic->setValue(state, 7);
+  }
+};
 
 // for accelerometer related values
 #define ACC_MULT 512
@@ -406,32 +404,32 @@ float pitch, roll, yaw;
 
 void updateIMU() {
 #if IMU_DEVICE == IMU_MPU6886
-      // for Accelerometer MPU6886
-      imu.getAccel(&ax, &ay, &az);
-      imu.getGyro(&gx, &gy, &gz);
-      imu.getTemp(&temp);
+  // for Accelerometer MPU6886
+  imu.getAccel(&ax, &ay, &az);
+  imu.getGyro(&gx, &gy, &gz);
+  imu.getTemp(&temp);
 #elif IMU_DEVICE == IMU_ADXL345
-      // for Accelerometer ADXL345
-      Wire.beginTransmission(I2C_ADDRESS);
-      Wire.write(REG_DATAX0);
-      if (Wire.endTransmission() == 0) {
-        uint8_t readData[6];
-        if (Wire.requestFrom(I2C_ADDRESS, sizeof(readData)) != sizeof(readData)) abort();
-        for (size_t i = 0; i < sizeof(readData); ++i) readData[i] = Wire.read();
-        int16_t val;
+  // for Accelerometer ADXL345
+  Wire.beginTransmission(I2C_ADDRESS);
+  Wire.write(REG_DATAX0);
+  if (Wire.endTransmission() == 0) {
+    uint8_t readData[6];
+    if (Wire.requestFrom(I2C_ADDRESS, sizeof(readData)) != sizeof(readData)) abort();
+    for (size_t i = 0; i < sizeof(readData); ++i) readData[i] = Wire.read();
+    int16_t val;
 
-        ((uint8_t *)&val)[0] = readData[0];
-        ((uint8_t *)&val)[1] = readData[1];
-        ax = val * 2.0f / 512.0f;
+    ((uint8_t *)&val)[0] = readData[0];
+    ((uint8_t *)&val)[1] = readData[1];
+    ax = val * 2.0f / 512.0f;
 
-        ((uint8_t *)&val)[0] = readData[2];
-        ((uint8_t *)&val)[1] = readData[3];
-        ay = val * 2.0f / 512.0f;
+    ((uint8_t *)&val)[0] = readData[2];
+    ((uint8_t *)&val)[1] = readData[3];
+    ay = val * 2.0f / 512.0f;
 
-        ((uint8_t *)&val)[0] = readData[4];
-        ((uint8_t *)&val)[1] = readData[5];
-        az = val * 2.0f / 512.0f;
-      }
+    ((uint8_t *)&val)[0] = readData[4];
+    ((uint8_t *)&val)[1] = readData[5];
+    az = val * 2.0f / 512.0f;
+  }
 #endif
 
   iax = (int16_t)(ax * ACC_MULT);
@@ -439,59 +437,56 @@ void updateIMU() {
   iaz = (int16_t)(az * ACC_MULT);
 }
 
-    class MotionCallbacks : public BLECharacteristicCallbacks {
-      void onRead(BLECharacteristic *pCharacteristic) {
-  log_i(">>> onMotionReadHandler\n");
+class MotionCallbacks : public BLECharacteristicCallbacks {
+  void onRead(BLECharacteristic *pCharacteristic) {
+    log_i(">>> onMotionReadHandler\n");
 
-  updateIMU();
+    updateIMU();
 
-  motion[0] = ((int)(pitch * ACC_MULT) & 0xff);
-  motion[1] = (((int)(pitch * ACC_MULT) >> 8) & 0xff);
-  motion[2] = ((int)(roll * ACC_MULT) & 0xff);
-  motion[3] = (((int)(roll * ACC_MULT) >> 8) & 0xff);
-  motion[4] = (iax & 0xff);
-  motion[5] = ((iax >> 8) & 0xff);
-  motion[6] = (iay & 0xff);
-  motion[7] = ((iay >> 8) & 0xff);
-  motion[8] = (-iaz & 0xff);
-  motion[9] = ((-iaz >> 8) & 0xff);
-        pCharacteristic->setValue(motion, 20);
+    motion[0] = ((int)(pitch * ACC_MULT) & 0xff);
+    motion[1] = (((int)(pitch * ACC_MULT) >> 8) & 0xff);
+    motion[2] = ((int)(roll * ACC_MULT) & 0xff);
+    motion[3] = (((int)(roll * ACC_MULT) >> 8) & 0xff);
+    motion[4] = (iax & 0xff);
+    motion[5] = ((iax >> 8) & 0xff);
+    motion[6] = (iay & 0xff);
+    motion[7] = ((iay >> 8) & 0xff);
+    motion[8] = (-iaz & 0xff);
+    motion[9] = ((-iaz >> 8) & 0xff);
+    pCharacteristic->setValue(motion, 20);
 
-  // debug print
-  char msg[256] = { 0 };
-  for (int i = 0; i < sizeof(motion); i++) {
-    sprintf(&msg[i * 3], "%02x,", motion[i], sizeof(motion) * 3 - 3 * i);
+    // debug print
+    char msg[256] = { 0 };
+    for (int i = 0; i < sizeof(motion); i++) {
+      sprintf(&msg[i * 3], "%02x,", motion[i], sizeof(motion) * 3 - 3 * i);
+    }
+    log_i("MOTION read: %s\n", msg);
   }
-  log_i("MOTION read: %s\n", msg);
-}
-}
-;
+};
 
-      // for button
-      class ActionCallbacks : public BLECharacteristicCallbacks {
-        void onRead(BLECharacteristic *pCharacteristic) {
-          pCharacteristic->setValue("Read me!!");  // dummy data
-  log_i(">>> onActionReadHandler\n");
-}
-}
-;
+// for button
+class ActionCallbacks : public BLECharacteristicCallbacks {
+  void onRead(BLECharacteristic *pCharacteristic) {
+    pCharacteristic->setValue("Read me!!");  // dummy data
+    log_i(">>> onActionReadHandler\n");
+  }
+};
 
 // for Analog pin
-        class AnalogPinCallbacks : public BLECharacteristicCallbacks {
-          void onRead(BLECharacteristic *pCharacteristic) {
-  log_i(">>> onAnalogPinReadHandler\n");
+class AnalogPinCallbacks : public BLECharacteristicCallbacks {
+  void onRead(BLECharacteristic *pCharacteristic) {
+    log_i(">>> onAnalogPinReadHandler\n");
 
-  int r = analogRead(ANALOG_INPUT_PIN);
+    int r = analogRead(ANALOG_INPUT_PIN);
 
-  log_i("Analog Pin0 Read:%d\n", r);
+    log_i("Analog Pin0 Read:%d\n", r);
 
-  analog[0] = (r & 0xff);
-  analog[1] = ((r >> 8) & 0xff);
+    analog[0] = (r & 0xff);
+    analog[1] = ((r >> 8) & 0xff);
 
-            pCharacteristic->setValue(analog, 2);
-}
-}
-;
+    pCharacteristic->setValue(analog, 2);
+  }
+};
 
 // Tone handler
 void playToneTask(void *args) {
@@ -587,76 +582,76 @@ void setup() {
   Serial.print("BLE start.\n");
   Serial.println(adv_str);
 
-            BLEDevice::init(adv_str);
-            BLEServer *pServer = BLEDevice::createServer();
-            pServer->setCallbacks(new MyServerCallbacks());
-            BLEService *pService = pServer->createService(BLEUUID(MBIT_MORE_SERVICE), 27);
+  BLEDevice::init(adv_str);
+  BLEServer *pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+  BLEService *pService = pServer->createService(BLEUUID(MBIT_MORE_SERVICE), 27);
 
-            // CMD
-            pCharacteristic[0] = pService->createCharacteristic(
-              MBIT_MORE_CH_COMMAND,
-              BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
-            pCharacteristic[0]->setCallbacks(new CmdCallbacks());
-            pCharacteristic[0]->addDescriptor(new BLE2902());
+  // CMD
+  pCharacteristic[0] = pService->createCharacteristic(
+    MBIT_MORE_CH_COMMAND,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
+  pCharacteristic[0]->setCallbacks(new CmdCallbacks());
+  pCharacteristic[0]->addDescriptor(new BLE2902());
 
-            // STATE
-            pCharacteristic[1] = pService->createCharacteristic(
-              MBIT_MORE_CH_STATE,
-              BLECharacteristic::PROPERTY_READ);
-            pCharacteristic[1]->setCallbacks(new StateCallbacks());
-            pCharacteristic[1]->addDescriptor(new BLE2902());
+  // STATE
+  pCharacteristic[1] = pService->createCharacteristic(
+    MBIT_MORE_CH_STATE,
+    BLECharacteristic::PROPERTY_READ);
+  pCharacteristic[1]->setCallbacks(new StateCallbacks());
+  pCharacteristic[1]->addDescriptor(new BLE2902());
 
-            // MOTION
-            pCharacteristic[2] = pService->createCharacteristic(
-              MBIT_MORE_CH_MOTION,
-              BLECharacteristic::PROPERTY_READ);
-            pCharacteristic[2]->setCallbacks(new MotionCallbacks());
-            pCharacteristic[2]->addDescriptor(new BLE2902());
+  // MOTION
+  pCharacteristic[2] = pService->createCharacteristic(
+    MBIT_MORE_CH_MOTION,
+    BLECharacteristic::PROPERTY_READ);
+  pCharacteristic[2]->setCallbacks(new MotionCallbacks());
+  pCharacteristic[2]->addDescriptor(new BLE2902());
 
-            pCharacteristic[3] = pService->createCharacteristic(
-              MBIT_MORE_CH_PIN_EVENT,
-              BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-            pCharacteristic[3]->setCallbacks(new DummyCallbacks());
-            pCharacteristic[3]->addDescriptor(new BLE2902());
+  pCharacteristic[3] = pService->createCharacteristic(
+    MBIT_MORE_CH_PIN_EVENT,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  pCharacteristic[3]->setCallbacks(new DummyCallbacks());
+  pCharacteristic[3]->addDescriptor(new BLE2902());
 
-            // ACTION
-            pCharacteristic[4] = pService->createCharacteristic(
-              MBIT_MORE_CH_ACTION_EVENT,
-              BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-            pCharacteristic[4]->setCallbacks(new ActionCallbacks());
-            pCharacteristic[4]->addDescriptor(new BLE2902());
+  // ACTION
+  pCharacteristic[4] = pService->createCharacteristic(
+    MBIT_MORE_CH_ACTION_EVENT,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  pCharacteristic[4]->setCallbacks(new ActionCallbacks());
+  pCharacteristic[4]->addDescriptor(new BLE2902());
 
-            // PINS
-            pCharacteristic[5] = pService->createCharacteristic(
-              MBIT_MORE_CH_ANALOG_IN_P0,
-              BLECharacteristic::PROPERTY_READ);
-            pCharacteristic[5]->setCallbacks(new AnalogPinCallbacks());
-            pCharacteristic[5]->addDescriptor(new BLE2902());
+  // PINS
+  pCharacteristic[5] = pService->createCharacteristic(
+    MBIT_MORE_CH_ANALOG_IN_P0,
+    BLECharacteristic::PROPERTY_READ);
+  pCharacteristic[5]->setCallbacks(new AnalogPinCallbacks());
+  pCharacteristic[5]->addDescriptor(new BLE2902());
 
-            pCharacteristic[6] = pService->createCharacteristic(
-              MBIT_MORE_CH_ANALOG_IN_P1,
-              BLECharacteristic::PROPERTY_READ);
-            pCharacteristic[6]->setCallbacks(new AnalogPinCallbacks());
-            pCharacteristic[6]->addDescriptor(new BLE2902());
+  pCharacteristic[6] = pService->createCharacteristic(
+    MBIT_MORE_CH_ANALOG_IN_P1,
+    BLECharacteristic::PROPERTY_READ);
+  pCharacteristic[6]->setCallbacks(new AnalogPinCallbacks());
+  pCharacteristic[6]->addDescriptor(new BLE2902());
 
-            pCharacteristic[7] = pService->createCharacteristic(
-              MBIT_MORE_CH_ANALOG_IN_P2,
-              BLECharacteristic::PROPERTY_READ);
-            pCharacteristic[7]->setCallbacks(new DummyCallbacks());
-            pCharacteristic[7]->addDescriptor(new BLE2902());
-
-
-            // MESSAGE (only for v2)
-            pCharacteristic[8] = pService->createCharacteristic(
-              MBIT_MORE_CH_MESSAGE,
-              BLECharacteristic::PROPERTY_READ);
-            pCharacteristic[8]->setCallbacks(new DummyCallbacks());
-            pCharacteristic[8]->addDescriptor(new BLE2902());
+  pCharacteristic[7] = pService->createCharacteristic(
+    MBIT_MORE_CH_ANALOG_IN_P2,
+    BLECharacteristic::PROPERTY_READ);
+  pCharacteristic[7]->setCallbacks(new DummyCallbacks());
+  pCharacteristic[7]->addDescriptor(new BLE2902());
 
 
-            pService->start();
-            BLEAdvertising *pAdvertising = pServer->getAdvertising();
-            pAdvertising->start();
+  // MESSAGE (only for v2)
+  pCharacteristic[8] = pService->createCharacteristic(
+    MBIT_MORE_CH_MESSAGE,
+    BLECharacteristic::PROPERTY_READ);
+  pCharacteristic[8]->setCallbacks(new DummyCallbacks());
+  pCharacteristic[8]->addDescriptor(new BLE2902());
+
+
+  pService->start();
+  BLEAdvertising *pAdvertising = pServer->getAdvertising();
+  pAdvertising->start();
 
   // Multitask for play tone.
   xTaskCreatePinnedToCore(playToneTask, "playToneTask", 4096, NULL, 1, &playToneTaskHandle, 1);
@@ -683,21 +678,21 @@ void sendBtn(uint8_t btnID, uint8_t btn, uint8_t btn_status, uint8_t prev) {
     // Button CLICK
     log_i(" button clicked!\n");
     action[3] = 0x03;
-              pCharacteristic[4]->setValue(action, 20);
-              pCharacteristic[4]->notify();
+    pCharacteristic[4]->setValue(action, 20);
+    pCharacteristic[4]->notify();
   }
   if (btn_status == 0 && prev == 1) {
     // Button Up
     log_i(" button up!\n");
     action[3] = 0x02;
-              pCharacteristic[4]->setValue(action, 20);
-              pCharacteristic[4]->notify();
+    pCharacteristic[4]->setValue(action, 20);
+    pCharacteristic[4]->notify();
   } else if (btn_status == 1 && prev == 0) {
     // Button Down
     log_i(" button down!\n");
     action[3] = 0x01;
-              pCharacteristic[4]->setValue(action, 20);
-              pCharacteristic[4]->notify();
+    pCharacteristic[4]->setValue(action, 20);
+    pCharacteristic[4]->notify();
   }
 }
 
@@ -757,8 +752,8 @@ void loop() {
       action[5] = (time >> 8) & 0xff;
       action[6] = (time >> 16) & 0xff;
       action[7] = (time >> 24) & 0xff;
-                pCharacteristic[4]->setValue(action, 20);
-                pCharacteristic[4]->notify();
+      pCharacteristic[4]->setValue(action, 20);
+      pCharacteristic[4]->notify();
       old_label_time = label_time;
     }
   }
